@@ -117,40 +117,13 @@ set_pref "textURL" "https://planet.debian.org/rss20.xml"
 set_pref "dialogTheme" "default"
 set_pref "settingsGeom" "1920,34 3106,34"
 
-PHOS_CMD_OPTS="--root -esc -scale 10 -ticks 10 -delay 150000"
-append_or_replace_custom "${PHOS} ${PHOS_CMD_OPTS}"
-
-if pgrep -u "$USER" xscreensaver >/dev/null 2>&1; then
-  DISPLAY="${DISPLAY:-:0}"
-  XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}"
-  export DISPLAY XAUTHORITY
-  xscreensaver-command -restart >/dev/null 2>&1 || {
-    pkill -u "$USER" xscreensaver || true
-    nohup xscreensaver -no-splash >/dev/null 2>&1 &
-  }
-fi
-
-PHOS_CMD_OPTS="--root -esc -scale 10 -ticks 10 -delay 150000"
-
-awk '
-  BEGIN{inprog=0}
-  /^programs:[[:space:]]*\\/{inprog=1; next}
-  { if(inprog){ if($0 ~ /\\$/) next; else inprog=0 }
-    print
-  }
-' "$XSC" > "$XSC.tmp"
-
-{
-  echo 'programs: \'
-  printf '"custom"  %s %s  \\\n\\\n' "$PHOS" "$PHOS_CMD_OPTS"
-} >> "$XSC.tmp"
-
-mv "$XSC.tmp" "$XSC"
-
-if grep -q "^selected:" "$XSC"; then
-  sed -i 's/^selected:.*/selected:\t0/' "$XSC"
+PHOS_CMD="phosphor --root -esc -scale 10 -ticks 10 -delay 150000"
+if grep -q '^phosphorCommand:' "$XSC"; then
+  sed -i "s#^phosphorCommand:.*#phosphorCommand:\t$PHOS_CMD#" "$XSC"
 else
-  echo -e "selected:\t0" >> "$XSC"
+  printf "phosphorCommand:\t%s\n" "$PHOS_CMD" >>"$XSC"
 fi
+
+sed -i '/^mode:/c\mode:\tone' "$XSC" || echo -e "mode:\tone" >>"$XSC"
 
 echo "done (backup: $BACKUP)"
