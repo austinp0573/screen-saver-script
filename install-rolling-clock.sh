@@ -130,4 +130,27 @@ if pgrep -u "$USER" xscreensaver >/dev/null 2>&1; then
   }
 fi
 
+PHOS_CMD_OPTS="--root -esc -scale 10 -ticks 10 -delay 150000"
+
+awk '
+  BEGIN{inprog=0}
+  /^programs:[[:space:]]*\\/{inprog=1; next}
+  { if(inprog){ if($0 ~ /\\$/) next; else inprog=0 }
+    print
+  }
+' "$XSC" > "$XSC.tmp"
+
+{
+  echo 'programs: \'
+  printf '"custom"  %s %s  \\\n\\\n' "$PHOS" "$PHOS_CMD_OPTS"
+} >> "$XSC.tmp"
+
+mv "$XSC.tmp" "$XSC"
+
+if grep -q "^selected:" "$XSC"; then
+  sed -i 's/^selected:.*/selected:\t0/' "$XSC"
+else
+  echo -e "selected:\t0" >> "$XSC"
+fi
+
 echo "done (backup: $BACKUP)"
